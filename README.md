@@ -1,5 +1,9 @@
 # Penicillium: a Python implementation of the IndPenSim penicillin fermentation simulator
 
+[![PyPI](https://img.shields.io/pypi/v/penicillium)](https://pypi.org/project/penicillium/)
+[![Documentation](https://readthedocs.org/projects/penicillium/badge/?version=latest)](https://penicillium.readthedocs.io/en/latest/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23773130.svg)](https://doi.org/10.5281/zenodo.23773130)
+
 **IndPenSim for Python: validated, pip-installable, fast.** Penicillium is a maintained implementation of
 IndPenSim, the industrial-scale (100 m³) fed-batch penicillin fermentation simulator of Goldrick et al. (2015,
 2019), the benchmark process for bioprocess monitoring, soft sensors, fault detection and control.
@@ -65,6 +69,7 @@ If you use Penicillium, cite IndPenSim and this package ([CITATION.cff](https://
 - S. Goldrick, C. A. Duran-Villalobos, K. Jankauskas, D. Lovett, S. S. Farid, B. Lennox. *Modern day monitoring and
   control challenges outlined on an industrial-scale benchmark fermentation process.* Computers and Chemical
   Engineering 130 (2019) 106471. doi:10.1016/j.compchemeng.2019.05.037
+- F. Sartori. *Penicillium: a validated, pip-installable Python implementation of the IndPenSim penicillin fermentation simulator.* Software, Zenodo. doi:10.5281/zenodo.23773130 (all versions; each release also has its own DOI)
 
 ## Licence
 

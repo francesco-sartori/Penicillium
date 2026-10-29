@@ -11,6 +11,7 @@ authors:
     orcid: "https://orcid.org/0000-0002-7905-5690"
 version: 0.1.0a1
 date-released: 2026-10-29
+doi: 10.5281/zenodo.23773130
 repository-code: "https://github.com/francesco-sartori/Penicillium"
 url: "https://penicillium.readthedocs.io"
 license: MIT

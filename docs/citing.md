@@ -12,6 +12,13 @@ A suggested sentence for your methods section:
 Please state the version (`penicillium.__version__`) and any non-default options (`result.config`). Your
 reviewers will want to reproduce your batches, and with the seed and the config they can.
 
+## Penicillium
+
+- F. Sartori. *Penicillium: a validated, pip-installable Python implementation of the IndPenSim penicillin fermentation simulator.* Software, Zenodo. [doi:10.5281/zenodo.23773130](https://doi.org/10.5281/zenodo.23773130)
+
+This DOI always resolves to the latest release. Each release also has its own DOI, listed on the
+[Zenodo page](https://doi.org/10.5281/zenodo.23773130); cite that one to name the exact version you ran.
+
 ## IndPenSim
 
 - S. Goldrick, A. Ştefan, D. Lovett, G. Montague, B. Lennox. *The development of an industrial-scale fed-batch

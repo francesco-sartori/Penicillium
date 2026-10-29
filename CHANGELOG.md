@@ -3,6 +3,11 @@
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); a minor version
 may change numerical output only with an entry here and an updated validation report.
 
+## Unreleased
+
+- README badges (PyPI, documentation, DOI) and the Zenodo concept DOI in `CITATION.cff`, the README and
+  [citing](docs/citing.md).
+
 ## 0.1.0a1 (2026-10-29)
 
 - `CITATION.cff` gives a single licence, `MIT`, so that Zenodo can read it and archive the release. The parts
