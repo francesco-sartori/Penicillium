@@ -9,13 +9,11 @@ authors:
   - family-names: Sartori
     given-names: Francesco
     orcid: "https://orcid.org/0000-0002-7905-5690"
-version: 0.1.0a0
-date-released: 2026-10-30
+version: 0.1.0a1
+date-released: 2026-10-29
 repository-code: "https://github.com/francesco-sartori/Penicillium"
 url: "https://penicillium.readthedocs.io"
-license:
-  - MIT
-  - BSD-3-Clause
+license: MIT
 keywords:
   - IndPenSim
   - penicillin

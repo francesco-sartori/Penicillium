@@ -20,7 +20,7 @@ IndPenSim, the industrial-scale (100 m³) fed-batch penicillin fermentation simu
 - **Open licence.** MIT, with the parts derived from IndPenSim also under IndPenSim's BSD 3-Clause licence;
   documented provenance ([licensing](https://penicillium.readthedocs.io/en/latest/licensing/)).
 
-> Status: alpha (0.1.0a0). The API may still change.
+> Status: alpha (0.1.0a1). The API may still change.
 
 **Documentation: <https://penicillium.readthedocs.io>**
 

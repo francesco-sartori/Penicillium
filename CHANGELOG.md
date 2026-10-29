@@ -3,7 +3,12 @@
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); a minor version
 may change numerical output only with an entry here and an updated validation report.
 
-## 0.1.0a0 (2026-10-30)
+## 0.1.0a1 (2026-10-29)
+
+- `CITATION.cff` gives a single licence, `MIT`, so that Zenodo can read it and archive the release. The parts
+  derived from IndPenSim are still also under its BSD 3-Clause License (`LICENSE`, `NOTICE`). No code changes.
+
+## 0.1.0a0 (2026-10-29)
 
 First public release (alpha).
 

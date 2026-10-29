@@ -78,7 +78,7 @@ Read these before you build a study on Penicillium. Each one is explained on the
 | The interface may still change | Names of classes, functions and arguments may change before version 1.0 |
 
 !!! note "Status"
-    Penicillium is alpha software (0.1.0a0). The model is validated, but the Python API may still change
+    Penicillium is alpha software (0.1.0a1). The model is validated, but the Python API may still change
     between releases. Install it with `pip install "penicillium[fast]"` ([installation](installation.md)).
 
 !!! tip "A word on names"
