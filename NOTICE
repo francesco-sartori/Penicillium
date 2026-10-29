@@ -1,0 +1,30 @@
+Penicillium
+Copyright (c) 2026 Francesco Sartori. Licensed under the MIT License; the parts derived from IndPenSim are
+also subject to IndPenSim's BSD 3-Clause License. Both licence texts are in LICENSE.
+
+This product includes or derives from the following works.
+
+1. IndPenSim (Industrial-scale Penicillin Simulation), MATLAB, version 2.01
+   Copyright (c) 2016, Stephen Goldrick. All rights reserved.
+   Distributed under the BSD 3-Clause License, reproduced in full in LICENSE (part 2).
+   https://www.mathworks.com/matlabcentral/fileexchange/49041-industrial-scale-penicillin-simulationv2
+   http://www.industrialpenicillinsimulation.com/
+   The process model, controllers, recipe tables, fault profiles and the reference Raman spectrum of this
+   package are derived from IndPenSim. Penicillium is not endorsed by Stephen Goldrick, by University
+   College London or by any other contributor to IndPenSim. IndPenSim is described in:
+     S. Goldrick, A. Stefan, D. Lovett, G. Montague, B. Lennox. The development of an industrial-scale
+       fed-batch fermentation simulation. Journal of Biotechnology 193 (2015) 70-82.
+       doi:10.1016/j.jbiotec.2014.10.029
+     S. Goldrick, C. A. Duran-Villalobos, K. Jankauskas, D. Lovett, S. S. Farid, B. Lennox. Modern day
+       monitoring and control challenges outlined on an industrial-scale benchmark fermentation process.
+       Computers and Chemical Engineering 130 (2019) 106471. doi:10.1016/j.compchemeng.2019.05.037
+   No MATLAB source file of IndPenSim is distributed with this package.
+
+2. PenSimPy 1.2.5, Copyright (c) 2020 Quartic.ai Canada, Inc., MIT License.
+   src/penicillium/model.py, simulator.py and raman.py contain portions derived from PenSimPy. Its MIT
+   permission notice is reproduced in LICENSE (part 1).
+
+3. Data. The PLS coefficients in src/penicillium/_paa_pls.py were fitted by this project on spectra it
+   simulated (validation/train_paa_pls.py); IndPenSim's PAA_PLS_model.mat is not used or distributed.
+   Comparisons with the published IndPenSim data set (Goldrick, 2019, Mendeley Data, doi:10.17632/pdnjz7zz5x.1,
+   CC BY 4.0) download it at run time; it is not redistributed.

@@ -1,0 +1,94 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "penicillium"
+dynamic = ["version"]
+description = "Penicillium: a Python implementation of the IndPenSim penicillin fermentation simulator"
+readme = "README.md"
+license = "MIT AND BSD-3-Clause"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.10"
+authors = [{ name = "Francesco Sartori" }]
+keywords = [
+    "IndPenSim", "penicillin fermentation simulator", "Python implementation of IndPenSim", "penicillin",
+    "fermentation", "bioprocess", "simulation", "process-control", "benchmark",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "numpy>=1.25",  # Generator.spawn
+    "scipy>=1.12",  # integrate.ODEintWarning
+    "pandas>=2.0",
+]
+
+[project.urls]
+Documentation = "https://penicillium.readthedocs.io"
+Source = "https://github.com/francesco-sartori/Penicillium"
+Changelog = "https://github.com/francesco-sartori/Penicillium/blob/main/CHANGELOG.md"
+Issues = "https://github.com/francesco-sartori/Penicillium/issues"
+
+[project.scripts]
+penicillium = "penicillium.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-cov", "pyarrow"]
+fast = ["numba>=0.59"]
+parquet = ["pyarrow"]
+gym = ["gymnasium>=1.0"]
+jax = ["jax>=0.4.30"]
+dcs = ["penicillium[fast]", "fastapi>=0.110", "uvicorn[standard]>=0.29"]
+# pillow: minari's HDF5 storage imports PIL without declaring it
+minari = ["penicillium[gym]", "minari[create,hdf5]>=0.5", "pillow"]
+# jinja2: DataFrame.style in tutorial 3 and the measurement-noise notebook
+notebooks = ["penicillium[fast,parquet,minari]", "matplotlib>=3.7", "ipykernel", "scikit-learn>=1.3", "jinja2"]
+all = ["penicillium[fast,parquet,gym]"]
+docs = ["mkdocs-material>=9.5,<10", "mkdocstrings[python]>=0.25", "mkdocs-jupyter>=0.25,<0.26", "penicillium[gym]"]
+dev = ["penicillium[test,parquet,fast,gym,jax,dcs]", "httpx", "diffrax", "ruff>=0.6"]
+
+[tool.hatch.version]
+path = "src/penicillium/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/penicillium"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "validation/*.py", "README.md", "LICENSE", "NOTICE", "CITATION.cff", "CHANGELOG.md", "docs/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: full-batch simulations (deselect with -m 'not slow')",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["src/penicillium/_raman_reference.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY", "RUF"]
+ignore = [
+    "E741",   # model code uses physics names such as `l`
+    "RUF002", # Greek letters in docstrings
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/penicillium/model.py" = ["E501"]
+"validation/compare_100_batches.py" = ["E501"]  # Markdown report templates
+"notebooks/*.ipynb" = ["E501"]  # long f-strings in printed summaries
+"docs/tutorials/*.ipynb" = ["E501", "E402", "B905"]  # printed summaries; imports where first used; zip over axes

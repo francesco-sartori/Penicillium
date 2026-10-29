@@ -1,0 +1,119 @@
+site_name: Penicillium
+site_description: Penicillium, a validated, pip-installable Python implementation of the IndPenSim penicillin fermentation simulator
+copyright: Copyright &copy; 2026 Francesco Sartori
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, "https://penicillium.readthedocs.io/en/latest/"]
+repo_url: https://github.com/francesco-sartori/Penicillium
+docs_dir: docs
+strict: true
+validation:
+  links:
+    anchors: warn
+exclude_docs: |
+  *.pdf
+  background.md
+
+theme:
+  name: material
+  custom_dir: overrides
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/brightness-7, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/brightness-4, name: Light mode}
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: installation.md
+      - Your first batch: quickstart.md
+  - Tutorials:
+      - Overview: tutorials/index.md
+      - 1. Your first batch: tutorials/01_first_batch.ipynb
+      - 2. Recipes and control: tutorials/02_recipes_and_control.ipynb
+      - 3. Options, faults and disturbances: tutorials/03_options_faults_disturbances.ipynb
+      - 4. Lab data, Raman and noise: tutorials/04_lab_data_raman_and_noise.ipynb
+      - 5. Campaigns and fault detection: tutorials/05_campaigns_and_fault_detection.ipynb
+      - 6. A Raman soft sensor: tutorials/06_raman_soft_sensor.ipynb
+      - 7. Reinforcement learning: tutorials/07_reinforcement_learning.ipynb
+      - 8. Differentiable model (JAX): tutorials/08_differentiable_model.ipynb
+      - 9. Command line: tutorials/09_command_line.ipynb
+  - User guide:
+      - The process: process.md
+      - The model: model.md
+      - Recipes and control: control.md
+      - Simulation options: configuration.md
+      - Faults and disturbances: faults.md
+      - Lab data and Raman spectra: measurements.md
+      - Variables and units: variables.md
+      - Campaigns and datasets: scenarios.md
+      - Reporting a benchmark: benchmarking.md
+      - Command line: cli.md
+      - Cookbook: cookbook.md
+  - More ways to use it:
+      - Operator console (DCS): dcs.md
+      - Reinforcement learning: gymnasium.md
+      - Differentiable model (JAX): differentiable.md
+  - Validation:
+      - Overview: validation.md
+      - 100-batch data set: validation_100_batches.md
+      - "Appendix: coverage of every channel": validation_coverage.md
+      - Batch by batch vs IndPenSim: validation_octave.md
+      - Differences and quirks: quirks.md
+      - Solver sensitivity: solver_sensitivity.md
+  - Speed: benchmarks.md
+  - Help:
+      - FAQ and troubleshooting: faq.md
+      - Glossary: glossary.md
+  - API reference: api.md
+  - Related simulators: related.md
+  - Citing and references: citing.md
+  - Licensing: licensing.md
+
+hooks:
+  - mkdocs_hooks.py
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      # The notebooks are stored with their outputs; the docs build shows them without running them.
+      execute: false
+      include_source: true
+      ignore_h1_titles: true
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: false
+            members_order: source
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.arithmatex: {generic: true}
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed: {alternate_style: true}
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js

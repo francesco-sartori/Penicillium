@@ -1,0 +1,86 @@
+cff-version: 1.2.0
+message: >-
+  If you use Penicillium, please cite the software and the two IndPenSim papers it implements
+  (Goldrick et al. 2015 and 2019, listed under references). Penicillium is MIT-licensed; the parts
+  derived from IndPenSim are also under IndPenSim's BSD 3-Clause License (Copyright (c) 2016, Stephen Goldrick).
+title: "Penicillium: a validated, pip-installable Python implementation of the IndPenSim penicillin fermentation simulator"
+type: software
+authors:
+  - family-names: Sartori
+    given-names: Francesco
+    orcid: "https://orcid.org/0000-0002-7905-5690"
+version: 0.1.0a0
+date-released: 2026-10-30
+repository-code: "https://github.com/francesco-sartori/Penicillium"
+url: "https://penicillium.readthedocs.io"
+license:
+  - MIT
+  - BSD-3-Clause
+keywords:
+  - IndPenSim
+  - penicillin
+  - fed-batch fermentation
+  - bioprocess simulation
+  - process control
+  - fault detection
+  - soft sensors
+  - reinforcement learning
+references:
+  - type: article
+    title: The development of an industrial-scale fed-batch fermentation simulation
+    authors:
+      - family-names: Goldrick
+        given-names: Stephen
+      - family-names: Ştefan
+        given-names: Andrei
+      - family-names: Lovett
+        given-names: David
+      - family-names: Montague
+        given-names: Gary
+      - family-names: Lennox
+        given-names: Barry
+    journal: Journal of Biotechnology
+    volume: 193
+    start: 70
+    end: 82
+    year: 2015
+    doi: 10.1016/j.jbiotec.2014.10.029
+  - type: article
+    title: Modern day monitoring and control challenges outlined on an industrial-scale benchmark fermentation process
+    authors:
+      - family-names: Goldrick
+        given-names: Stephen
+      - family-names: Duran-Villalobos
+        given-names: Carlos A.
+      - family-names: Jankauskas
+        given-names: Karolis
+      - family-names: Lovett
+        given-names: David
+      - family-names: Farid
+        given-names: Suzanne S.
+      - family-names: Lennox
+        given-names: Barry
+    journal: Computers and Chemical Engineering
+    volume: 130
+    start: 106471
+    year: 2019
+    doi: 10.1016/j.compchemeng.2019.05.037
+  - type: data
+    title: "Data for: Modern day monitoring and control challenges outlined on an industrial-scale benchmark fermentation process"
+    authors:
+      - family-names: Goldrick
+        given-names: Stephen
+    publisher:
+      name: Mendeley Data
+    year: 2019
+    doi: 10.17632/pdnjz7zz5x.1
+    license: CC-BY-4.0
+  - type: software
+    title: "IndPenSim: Industrial-scale Penicillin Simulation"
+    authors:
+      - family-names: Goldrick
+        given-names: Stephen
+    version: "2.01"
+    date-released: 2019-07-09
+    license: BSD-3-Clause
+    url: https://www.mathworks.com/matlabcentral/fileexchange/49041-industrial-scale-penicillin-simulationv2
