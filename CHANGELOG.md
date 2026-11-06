@@ -7,6 +7,8 @@ may change numerical output only with an entry here and an updated validation re
 
 - README badges (PyPI, documentation, DOI) and the Zenodo concept DOI in `CITATION.cff`, the README and
   [citing](docs/citing.md).
+- README rewritten: install from PyPI, badges, a figure of one batch (`docs/scripts/readme_figure.py`), a
+  fault-campaign example and a Contributing section; new `CONTRIBUTING.md`. No code changes.
 
 ## 0.1.0a1 (2026-10-29)
 
