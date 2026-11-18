@@ -15,6 +15,7 @@ Every campaign is reproducible from ``seed`` on any platform: batch ``i`` gets t
 from __future__ import annotations
 
 import json
+import pickle
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -24,6 +25,7 @@ import pandas as pd
 
 from .batches import BatchSpec, simulate_batches
 from .constants import STEP_IN_HOURS
+from .faults import FaultSpec
 from .noise import MeasurementNoise
 from .raman import WAVENUMBER
 from .result import LAB_CHANNELS, BatchResult
@@ -48,12 +50,16 @@ class Campaign:
             measurement noise, the channels hold the measurements and ``<channel>_true`` the exact values.
         batches: one row per batch: ``batch_id``, ``seed``, ``kind``, ``fault``, ``fault_name``,
             ``batch_length_h``, ``total_yield_kg``, ``final_penicillin_g_per_L``, ``fault_onset_h`` (first sample
-            with an active fault, NaN for normal batches).
+            with an active fault, NaN for normal batches). When some batch uses ``FaultSpec`` windows, also
+            ``fault_end_h`` (last sample with an active fault).
         lab: off-line measurements in long form: ``batch_id``, ``sample_time_h`` (when the broth was sampled),
             ``available_time_h`` (when the result is reported), and the values (with measurement noise, also
             ``<assay>_true``).
         raman: Raman spectra per ``batch_id`` (samples x wavenumbers, wavenumbers as ``raman_wavenumber``), when
             recorded.
+        fault_windows: when some batch uses ``FaultSpec`` windows, one row per window drawn: ``batch_id``,
+            ``fault``, ``fault_name``, ``target``, ``effect``, ``shape``, ``hold``, ``onset_h``, ``end_h``,
+            ``magnitude`` (``None`` otherwise).
     """
 
     samples: pd.DataFrame
@@ -62,6 +68,7 @@ class Campaign:
     raman: dict[int, np.ndarray] | None = None
     raman_wavenumber: np.ndarray = field(default_factory=lambda: WAVENUMBER.copy())
     description: str = ""
+    fault_windows: pd.DataFrame | None = None
 
     def split(self, test_fraction: float = 0.3, seed: int = 0) -> tuple[list[int], list[int]]:
         """Split batch ids into train and test sets, by batch (never by sample) and stratified by fault."""
@@ -80,7 +87,10 @@ class Campaign:
         return self.samples[["batch_id", "time_h", "kind", "fault", "fault_active", *ONLINE_CHANNELS]]
 
     def save(self, directory: str | Path) -> Path:
-        """Write ``samples.parquet``, ``batches.csv``, ``lab.csv``, ``raman/<batch_id>.npy`` and ``campaign.json``."""
+        """Write ``samples.parquet``, ``batches.csv``, ``lab.csv``, ``raman/<batch_id>.npy`` and ``campaign.json``.
+
+        Also ``fault_windows.csv`` when the campaign has ``FaultSpec`` windows.
+        """
         from ._version import __version__
 
         out = Path(directory)
@@ -88,6 +98,8 @@ class Campaign:
         self.samples.to_parquet(out / "samples.parquet")
         self.batches.to_csv(out / "batches.csv", index=False)
         self.lab.to_csv(out / "lab.csv", index=False)
+        if self.fault_windows is not None:
+            self.fault_windows.to_csv(out / "fault_windows.csv", index=False)
         if self.raman:
             (out / "raman").mkdir(exist_ok=True)
             np.save(out / "raman" / "wavenumber.npy", self.raman_wavenumber)
@@ -110,12 +122,21 @@ def build_campaign(
     """Simulate ``specs`` in parallel and collect them into a ``Campaign`` (batch ids 1, 2, ...).
 
     ``measurement_noise`` adds sensor and assay errors to the online and lab channels, seeded by each batch's seed.
+    Batches with ``FaultSpec`` windows add ``batches.fault_end_h`` and ``Campaign.fault_windows``.
     """
+    with_windows = any(spec.config.fault_specs for spec in specs)
+    if with_windows and n_jobs != 1:
+        try:
+            pickle.dumps([spec.config.fault_specs for spec in specs])
+        except Exception as exc:  # lambdas and local functions cannot reach the worker processes
+            raise ValueError(
+                f"fault specs must be picklable for n_jobs != 1 (use a module-level function as shape): {exc}"
+            ) from exc
     results = simulate_batches(specs, n_jobs=n_jobs, progress=progress, keep_raman=keep_raman)
     if measurement_noise is not None:
         results = [measurement_noise.apply(res, seed=spec.seed) for spec, res in zip(specs, results, strict=True)]
     kinds = list(kinds) if kinds is not None else ["custom"] * len(results)
-    frames, rows, labs = [], [], []
+    frames, rows, labs, windows = [], [], [], []
     raman: dict[int, np.ndarray] = {}
     for batch_id, (spec, kind, res) in enumerate(zip(specs, kinds, results, strict=True), start=1):
         df = res.to_pandas().reset_index()
@@ -134,6 +155,9 @@ def build_campaign(
             "final_penicillin_g_per_L": float(res["P"][-1]),
             "fault_onset_h": float(res.time[active[0]]) if len(active) else np.nan,
         })  # fmt: skip
+        if with_windows:
+            rows[-1]["fault_end_h"] = float(res.time[active[-1]]) if len(active) else np.nan
+            windows += [{"batch_id": batch_id, **w} for w in res.metadata.get("fault_windows", [])]
         labs.append(_lab_table(res, batch_id, spec.config))
         if keep_raman and res.raman is not None:
             raman[batch_id] = res.raman
@@ -145,7 +169,13 @@ def build_campaign(
         lab=pd.concat(labs, ignore_index=True),
         raman=raman or None,
         description=description,
+        fault_windows=pd.DataFrame(windows, columns=_WINDOW_COLUMNS) if with_windows else None,
     )
+
+
+_WINDOW_COLUMNS: tuple[str, ...] = (
+    "batch_id", "fault", "fault_name", "target", "effect", "shape", "hold", "onset_h", "end_h", "magnitude",
+)  # fmt: skip
 
 
 def _lab_table(res: BatchResult, batch_id: int, config: SimulationConfig) -> pd.DataFrame:
@@ -177,11 +207,12 @@ def variable_batch_lengths(n: int, seed: int, mean: float = 230.0, sd: float = 2
 def fault_campaign(
     n_normal: int = 20,
     n_per_fault: int = 5,
-    faults: Sequence[Fault] = SINGLE_FAULTS,
+    faults: Sequence[Fault | FaultSpec] = SINGLE_FAULTS,
     seed: int = 0,
     config: SimulationConfig | None = None,
     n_jobs: int | None = None,
     measurement_noise: MeasurementNoise | None = None,
+    randomise: bool = False,
 ) -> Campaign:
     """Normal and faulty batches with per-sample fault labels, for fault detection and diagnosis.
 
@@ -189,11 +220,29 @@ def fault_campaign(
     samples where the fault acts, ``batches.fault_onset_h`` the first one. ``config`` sets everything else
     (default: IndPenSim defaults without Raman); ``measurement_noise`` adds sensor and assay errors (see
     ``build_campaign``).
+
+    ``randomise=True`` draws the onset and duration of each faulty batch's fault from the batch seed
+    (``FaultSpec(fault, randomise=True)``; ``Fault.ALL``: faults 1-5, each with its own window), so the time of a
+    fault no longer gives its type away. ``faults`` may also hold ``FaultSpec`` objects, each used as it is for
+    ``n_per_fault`` batches (each batch draws its own values). The windows drawn are in ``Campaign.fault_windows``.
     """
     base = config if config is not None else SimulationConfig(raman_mode=RamanMode.OFF)
-    plan = [Fault.NONE] * n_normal + [Fault(f) for f in faults for _ in range(n_per_fault)]
-    specs = [BatchSpec(seed=_seed(seed, i), config=replace(base, fault=f)) for i, f in enumerate(plan, start=1)]
-    kinds = ["normal" if f == Fault.NONE else "fault" for f in plan]
+    if base.fault_specs:
+        raise ValueError("pass FaultSpec objects in faults=, not in config.fault_specs")
+
+    def batch_config(f: Fault | FaultSpec) -> SimulationConfig:
+        if isinstance(f, FaultSpec):
+            return replace(base, fault=Fault.NONE, fault_specs=(f,))
+        f = Fault(f)
+        if randomise and f != Fault.NONE:
+            members = (Fault.AERATION, Fault.PRESSURE, Fault.SUBSTRATE_FEED, Fault.BASE_FLOW, Fault.COOLANT_FLOW)
+            specs = tuple(FaultSpec(m, randomise=True) for m in (members if f == Fault.ALL else (f,)))
+            return replace(base, fault=f, fault_specs=specs)
+        return replace(base, fault=f)
+
+    plan = [Fault.NONE] * n_normal + [f for f in faults for _ in range(n_per_fault)]
+    specs = [BatchSpec(seed=_seed(seed, i), config=batch_config(f)) for i, f in enumerate(plan, start=1)]
+    kinds = ["normal" if spec.config.fault == Fault.NONE else "fault" for spec in specs]
     return build_campaign(
         specs, kinds, n_jobs=n_jobs, description=f"fault_campaign(seed={seed})", measurement_noise=measurement_noise
     )

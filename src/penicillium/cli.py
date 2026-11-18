@@ -51,7 +51,9 @@ def _simulate(seed: int, fault: int, args: argparse.Namespace) -> dict:
         "final_penicillin_g_per_L": float(result["P"][-1]),
         "measurement_noise": args.noise,
         "files": [f.name for f in files],
-        "config": {k: (v.name if hasattr(v, "name") else v) for k, v in asdict(config).items()},
+        "config": {
+            k: (v.name if hasattr(v, "name") else v) for k, v in asdict(config).items() if k != "fault_specs"
+        },  # the command line uses IndPenSim's fault windows
     }
 
 

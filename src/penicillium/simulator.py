@@ -14,6 +14,7 @@ import enum
 import functools
 import math
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -25,6 +26,9 @@ from .recipe import Recipe
 from .result import CHANNEL_NAMES, BatchResult
 from .rng import RNG, randint
 from .solvers import SOLVERS, SolverError, integrate
+
+if TYPE_CHECKING:
+    from .faults import FaultSpec, FaultWindow
 
 #: Longest supported batch: IndPenSim's recipe tables and sensor-fault ramps end at sample 1750.
 MAX_BATCH_LENGTH_H = 350.0
@@ -98,6 +102,9 @@ class SimulationConfig:
             controller's previous error does not include the setpoint, and the heating PID starts from the
             previous *cooling* flow. ``"fixed"`` uses the alternative reading of both. See docs/quirks.md,
             section 4.
+        fault_specs: onset, duration, magnitude and shape of the fault windows (``penicillium.FaultSpec``, one or
+            a sequence), fixed or random, instead of IndPenSim's windows (an addition to IndPenSim). Empty (default):
+            IndPenSim's windows. With specs, ``fault`` is taken from them (``Fault.ALL`` for several of faults 1-5).
     """
 
     fault: Fault = Fault.NONE
@@ -113,8 +120,15 @@ class SimulationConfig:
     offline_delay_steps: int = 4
     batch_length_h: float = float(BATCH_LENGTH_IN_HOURS)
     quirks: str = "matlab"
+    fault_specs: tuple[FaultSpec, ...] = ()
 
     def __post_init__(self) -> None:
+        if not (isinstance(self.fault_specs, tuple) and not self.fault_specs):
+            from .faults import normalise_specs
+
+            specs, fault = normalise_specs(self.fault_specs, self.fault)
+            object.__setattr__(self, "fault_specs", specs)
+            object.__setattr__(self, "fault", fault)
         if self.quirks not in ("matlab", "fixed"):
             raise ValueError(f"quirks must be 'matlab' or 'fixed', got {self.quirks!r}")
         if self.inhibition not in (0, 1, 2):
@@ -501,6 +515,12 @@ class Simulator:
             self._bp = BatchParameters.from_seed(seed, self._n_steps)
         if initial_conditions:
             self._bp.override(initial_conditions)
+        # Fault windows of the specs, drawn from the seed in streams of their own (None: IndPenSim's windows).
+        self._fault_windows: list[FaultWindow] | None = None
+        if self.config.fault_specs:
+            from .faults import draw_windows
+
+            self._fault_windows = draw_windows(self.config.fault_specs, seed, self._n_steps)
         self._params = list(self._bp.params)  # model par[0:5]; the growth-rate reset changes mux_max in place
         self._growth_resets: list[int] = []
         # Recorded channels, one row per sample. The 31 state channels are also the next sample's initial state.
@@ -570,6 +590,13 @@ class Simulator:
         # Outputs use pH and kJ.
         data["pH"] = _ph_channel(data["pH"])
         data["Q"] = data["Q"] / 1000
+        metadata = {
+            "initial_conditions": self._bp.initial_conditions(),
+            # Samples at which IndPenSim's growth-rate reset (Inhib 1/2) set mu_x_max to 5 * mu_X_calc.
+            "growth_rate_resets": list(self._growth_resets),
+        }
+        if self._fault_windows is not None:
+            metadata["fault_windows"] = [w.as_dict() for w in self._fault_windows]
         return BatchResult(
             time=np.arange(1, n + 1) * STEP_IN_HOURS,
             data=data,
@@ -579,11 +606,7 @@ class Simulator:
             seed=self._seed,
             config=self.config,
             solver=self.solver,
-            metadata={
-                "initial_conditions": self._bp.initial_conditions(),
-                # Samples at which IndPenSim's growth-rate reset (Inhib 1/2) set mu_x_max to 5 * mu_X_calc.
-                "growth_rate_resets": list(self._growth_resets),
-            },
+            metadata=metadata,
         )
 
     # ------------------------------------------------------------------ internals
@@ -687,10 +710,16 @@ class Simulator:
         fixed = cfg.quirks == "fixed"
         r1, r2, r3 = max(k - 2, 0), max(k - 3, 0), max(k - 4, 0)  # rows of samples k-1, k-2, k-3
         fault_ref = 0
+        windows = self._fault_windows  # None: IndPenSim's windows, applied by the `elif`/`else` branches below
+        if windows is not None:
+            from .faults import apply_process_faults, sensor_offset
 
         # ---- pH: split range, base when pH is below the setpoint (error >= -0.05), acid otherwise.
         ph_drift = 0.0
-        if cfg.fault == Fault.PH_SENSOR:
+        if windows is not None:
+            ph_drift, active = sensor_offset(windows, k, "pH")
+            fault_ref = 1 if active else fault_ref
+        elif cfg.fault == Fault.PH_SENSOR:
             ph_drift = _sensor_drift(k, 0.1)
             fault_ref = 1
         ph, ph1, ph2 = _ph(d["pH"][r1]), _ph(d["pH"][r2]), _ph(d["pH"][r3])
@@ -706,7 +735,10 @@ class Simulator:
 
         # ---- Temperature: split range, cooling water when T is above the setpoint - 0.05 K, hot water otherwise.
         T_drift = 0.0
-        if cfg.fault == Fault.TEMPERATURE_SENSOR:
+        if windows is not None:
+            T_drift, active = sensor_offset(windows, k, "T")
+            fault_ref = 1 if active else fault_ref
+        elif cfg.fault == Fault.TEMPERATURE_SENSOR:
             T_drift = _sensor_drift(k, 0.4)
             fault_ref = 1
         T, T1, T2 = d["T"][r1], d["T"][r2], d["T"][r3]
@@ -739,12 +771,15 @@ class Simulator:
                     # to length k).
                     u[name] = d[name][k - 2] + self._prbs[k - 1]
 
-        # ---- Process faults force an input to a fixed value over fixed sample ranges.
-        for fault in _FAULT_PROFILES if cfg.fault == Fault.ALL else (cfg.fault,):
-            for name, value, first, last in _FAULT_PROFILES.get(fault, ()):
-                if first <= k <= last:
-                    u[name] = value
-                    fault_ref = 1
+        # ---- Process faults force an input to a fixed value over fixed sample ranges (or follow the fault specs).
+        if windows is not None:
+            fault_ref = 1 if apply_process_faults(windows, k, u) else fault_ref
+        else:
+            for fault in _FAULT_PROFILES if cfg.fault == Fault.ALL else (cfg.fault,):
+                for name, value, first, last in _FAULT_PROFILES.get(fault, ()):
+                    if first <= k <= last:
+                        u[name] = value
+                        fault_ref = 1
 
         # ---- PAT control of PAA from 10 h: PID on the true PAA to 1200 mg/L. IndPenSim's PLS prediction enters only
         # a zero-gain D term (quirks.md 2.5), so the D input is 0 here.
