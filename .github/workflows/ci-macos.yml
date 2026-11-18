@@ -1,0 +1,30 @@
+name: CI macOS
+
+# Kept apart from ci.yml because GitHub's hosted macOS runners are sometimes not allocated, and a job that never
+# starts ends as cancelled. It runs on pull requests (so every change is tested on macOS before it reaches main)
+# and on demand, but not on pushes to main or tags: a cancelled macOS job would otherwise mark the commits of main,
+# and the release tags, as failed. Re-run from the Actions tab if a job is never picked up.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.14"]
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv venv && uv pip install -e ".[test,fast,gym,jax]"
+      - run: uv run pytest -m "not slow" -q

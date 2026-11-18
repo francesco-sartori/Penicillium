@@ -29,11 +29,14 @@ jobs:
           path: dist/
 
   smoke-test:
-    # The wheel must install and run on every OS and supported Python without a compiler.
+    # The wheel must install and run on every supported Python without a compiler. It is pure Python
+    # (py3-none-any); macOS is not in this matrix because its hosted runners are sometimes not allocated, which
+    # blocked the upload and marked the tag as failed. The same code is tested on macOS by ci-macos.yml on every
+    # pull request before it reaches main.
     needs: build
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.14"]
     runs-on: ${{ matrix.os }}
     steps:

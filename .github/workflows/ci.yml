@@ -1,7 +1,9 @@
-name: CI
+name: CI (Linux, Windows)
 
 on:
   push:
+    # Branches only: a version tag points at a commit that CI has already tested on main.
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 
@@ -14,11 +16,13 @@ jobs:
       - run: uvx ruff check .
       - run: uvx ruff format --check .
 
-  test:
+  test-linux-windows:
+    # macOS runs in ci-macos.yml: its hosted runners are sometimes not allocated, and that must not turn the
+    # CI badge (which tracks this workflow on main) red.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: ${{ matrix.os }}
     steps:
