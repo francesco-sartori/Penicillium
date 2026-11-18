@@ -1,6 +1,7 @@
 # AGENTS.md
 
-Guidance for coding agents (and people) working on this repository. User documentation is at
+Guidance for coding agents (and people) working on this repository; see also [CONTRIBUTING.md](CONTRIBUTING.md).
+User documentation is at
 https://penicillium.readthedocs.io; an index for language models is at
 https://penicillium.readthedocs.io/en/latest/llms.txt.
 

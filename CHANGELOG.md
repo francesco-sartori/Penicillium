@@ -3,7 +3,7 @@
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); a minor version
 may change numerical output only with an entry here and an updated validation report.
 
-## Unreleased (0.1.0a2)
+## 0.1.0a2 (2026-11-18)
 
 ### Faults
 - `FaultSpec` (`penicillium.faults`, an addition to IndPenSim): the onset, duration and magnitude of each fault
@@ -34,7 +34,7 @@ may change numerical output only with an entry here and an updated validation re
 - README badges (PyPI, documentation, DOI) and the Zenodo concept DOI in `CITATION.cff`, the README and
   [citing](docs/citing.md).
 - README rewritten: install from PyPI, badges, a figure of one batch (`docs/scripts/readme_figure.py`), a
-  fault-campaign example and a Contributing section; new `CONTRIBUTING.md`. No code changes.
+  fault-campaign example and a Contributing section; new `CONTRIBUTING.md`; the fault-timing options.
 
 ## 0.1.0a1 (2026-10-29)
 

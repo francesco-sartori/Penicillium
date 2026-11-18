@@ -20,14 +20,14 @@ soft sensors, fault detection and control.
   ([licensing](https://penicillium.readthedocs.io/en/latest/licensing/)).
 - **Ready for ML and control.** Labelled campaigns, Gymnasium environments, Minari datasets and a differentiable
   JAX model.
-- **Limits stated.** Known limitations, such as fixed fault windows, are listed in the
-  [documentation](https://penicillium.readthedocs.io/en/latest/#limitations-at-a-glance).
+- **Limits stated.** Known limitations, such as the true values recorded in the sensor-fault channels, are listed
+  in the [documentation](https://penicillium.readthedocs.io/en/latest/#limitations-at-a-glance).
 
 ![Penicillin, biomass, substrate and feed rates against time (h) for one batch](https://raw.githubusercontent.com/francesco-sartori/Penicillium/main/docs/assets/readme_batch.png)
 
 *One default batch, `Simulator().run(seed=1)` ([script](https://github.com/francesco-sartori/Penicillium/blob/main/docs/scripts/readme_figure.py)).*
 
-> Status: alpha (0.1.0a1). The API may still change.
+> Status: alpha (0.1.0a2). The API may still change.
 
 ## Install
 
@@ -61,6 +61,10 @@ if __name__ == "__main__":  # campaigns run in worker processes
     train = data[data.batch_id.isin(train_ids)]  # per-sample label: train.fault_active
 ```
 
+By default each fault acts in IndPenSim's fixed windows; `fault_campaign(..., randomise=True)` draws the onset and
+duration of each faulty batch's fault instead, and `FaultSpec` sets onset, duration, magnitude and shape
+([fault timing and magnitude](https://penicillium.readthedocs.io/en/latest/faults/#fault-timing-and-magnitude)).
+
 ## Operator console
 
 `penicillium dcs` (extra `dcs`) runs one batch in real time in the browser on a DCS-style operator display, for
@@ -72,7 +76,7 @@ teaching and operator training ([operator console](https://penicillium.readthedo
 
 | | |
 |---|---|
-| [Tutorials](https://penicillium.readthedocs.io/en/latest/tutorials/) | Nine notebooks, from a first batch to fault detection, soft sensors, reinforcement learning and the JAX model |
+| [Tutorials](https://penicillium.readthedocs.io/en/latest/tutorials/) | Ten notebooks, from a first batch to fault detection, soft sensors, reinforcement learning, the JAX model and fault timing |
 | [User guide](https://penicillium.readthedocs.io/en/latest/) | The process, the model, every option, variables and units, FAQ |
 | [Validation](https://penicillium.readthedocs.io/en/latest/validation/) | What is checked against IndPenSim and the published data, and the results |
 | [Case studies](https://github.com/francesco-sartori/Penicillium/tree/main/notebooks) | Replications of Goldrick et al. (2015, 2019), a comparison with the published 100-batch data, a statistical check of the noise model |
