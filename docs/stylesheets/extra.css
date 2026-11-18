@@ -1,3 +1,26 @@
+/* Notebook download buttons: labelled button at the top of each tutorial (overrides/partials/actions.html) and
+   the buttons of the tutorials overview. */
+.md-typeset .md-button.nb-download {
+  /* On a line of its own, right-aligned: a float would narrow the whole notebook column. */
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.4em;
+  margin: 0 0 0.6rem auto;
+  padding: 0.45em 1em;
+  font-size: 0.75rem;
+}
+.md-typeset .md-button.nb-download svg {
+  width: 1.1em;
+  height: 1.1em;
+  fill: currentcolor;
+}
+.md-typeset .md-button.nb-download-row {
+  padding: 0.2em 0.7em;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
 /* Footer: copyright on the left, "Made with Material for MkDocs" on the right (stacked on narrow screens). */
 .md-copyright {
   display: flex;

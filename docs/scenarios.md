@@ -29,10 +29,14 @@ Each function returns a `Campaign` with:
 - `samples`: one row per batch and 12-minute sample: `batch_id`, `time_h`, `kind`, `fault` (the batch's fault
   code), `fault_active` (the per-sample label) and all 55 channels;
 - `batches`: one row per batch: `batch_id`, `seed`, `kind`, `fault`, `fault_name`, `batch_length_h`,
-  `total_yield_kg`, `final_penicillin_g_per_L`, `fault_onset_h`;
+  `total_yield_kg`, `final_penicillin_g_per_L`, `fault_onset_h`, and `fault_end_h` when some batch uses
+  [fault options](faults.md#fault-timing-and-magnitude);
 - `lab`: lab results in long form: `batch_id`, `sample_time_h`, `available_time_h`, `P`, `X`, `PAA`, `NH3`,
   `Viscosity`;
-- `raman`: `{batch_id: spectra}` when spectra were kept, with the wavenumbers in `raman_wavenumber`.
+- `raman`: `{batch_id: spectra}` when spectra were kept, with the wavenumbers in `raman_wavenumber`;
+- `fault_windows`: with fault options, one row per fault window drawn (`batch_id`, `fault`, `fault_name`,
+  `target`, `effect`, `shape`, `hold`, `onset_h`, `end_h`, `magnitude`), saved as `fault_windows.csv`; `None`
+  otherwise.
 
 Batch `i` of a campaign gets the seed `seed × 100 000 + i`, so a campaign is reproducible from its `seed` on any
 platform, and campaigns with different seeds never share a batch.
@@ -55,8 +59,11 @@ is the per-sample label, copied from the `Fault_ref` channel:
   (IndPenSim's convention). The drift itself acts from 40 h (sample 201) on;
 - **normal batches:** 0 everywhere.
 
-`batches.fault_onset_h` is the time of the first sample with `fault_active` = 1, so for sensor faults it is the
-start of the batch, not the start of the drift. Which label the tutorials use:
+With [fault options](faults.md#fault-timing-and-magnitude) (`randomise=True` or `FaultSpec` entries),
+`fault_active` is 1 exactly in the samples of the windows drawn for the batch, for sensor faults too.
+
+`batches.fault_onset_h` is the time of the first sample with `fault_active` = 1, so with IndPenSim's windows, for
+sensor faults, it is the start of the batch, not the start of the drift. Which label the tutorials use:
 
 | Tutorial | Label used |
 |---|---|
@@ -81,6 +88,24 @@ The faulty batches cycle through the seven single faults (aeration, pressure, su
 flow, temperature sensor, pH sensor). `faults=[...]` selects others, and `config=` changes everything else
 (default: IndPenSim defaults without Raman). Read [Faults](faults.md#fault-labels) for what the labels mean,
 especially for the sensor faults.
+
+By default each fault acts in IndPenSim's windows, so its timing gives its type away. With `randomise=True` each
+faulty batch draws the onset and duration of its fault from its seed, and `faults=` also accepts
+[`FaultSpec`](faults.md#fault-timing-and-magnitude) objects for full control:
+
+```python
+from penicillium import FaultSpec, scenarios
+from penicillium.faults import Uniform
+
+camp = scenarios.fault_campaign(n_normal=40, n_per_fault=10, seed=0, randomise=True)
+camp.fault_windows  # the window drawn for each faulty batch
+
+# coolant flow falls gradually to half, then recovers
+blockage = FaultSpec(
+    "coolant_flow", onset_h=Uniform(40, 180), duration_h=30, magnitude=0.5, effect="scale", shape="ramp"
+)
+camp = scenarios.fault_campaign(n_normal=40, n_per_fault=10, faults=[blockage], seed=0)
+```
 
 !!! tip "Split by batch, always"
     Neighbouring samples of a batch are almost identical. A random split by *sample* leaks the test batches into

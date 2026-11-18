@@ -34,33 +34,13 @@ Process faults override an input with a fixed value over fixed sample ranges, ex
 Windows that start after the end of the batch simply do not occur. The second coolant window, for example,
 needs a batch longer than 240 h.
 
-!!! warning "The timing of a fault gives its type away"
-    The windows are IndPenSim's and cannot be changed through the configuration: each fault type acts at the same
-    times, with the same duration and magnitude, in every batch, and no two fault types share onset and duration.
-    A classifier trained on these batches can therefore infer the fault type from the time at which something
-    happens, instead of from the process. Keep this in mind when you score fault diagnosis, and prefer features
-    that do not include the batch time. Detection delays measured on these batches also reflect the windows.
-
-    A process failure with a different timing, duration or value can be imposed through the
-    [stepping interface](control.md#control-sample-by-sample): run the batch sample by sample and force the input
-    yourself in the samples you choose. `Fault_ref` is then not set, so keep your own label. Options for the
-    onset, duration and magnitude of each fault, with the IndPenSim windows kept as the default, are planned.
-
-    ```python
-    from penicillium import Simulator
-
-    sim = Simulator()
-    sim.reset(seed=1)
-    label = []
-    while not sim.done:
-        u = sim.recipe_inputs()
-        active = 60.0 <= sim.time < 66.0  # aeration failure from 60 to 66 h
-        if active:
-            u["Fg"] = 20.0
-        sim.step(**u)
-        label.append(int(active))  # your own per-sample label
-    result = sim.result()
-    ```
+!!! warning "With IndPenSim's windows, the timing of a fault gives its type away"
+    By default each fault type acts at the same times, with the same duration and magnitude, in every batch, and
+    no two fault types share onset and duration. A classifier trained on these batches can therefore infer the
+    fault type from the time at which something happens, instead of from the process, and detection delays
+    reflect the windows. For fault diagnosis, draw the timing at random per batch
+    (`FaultSpec(fault, randomise=True)`, or `randomise=True` in
+    [`fault_campaign`](scenarios.md#fault-detection-and-diagnosis)), as described below.
 
 ### Sensor faults: the subtle ones
 
@@ -85,7 +65,8 @@ per-sample label:
 
 - for process faults (1–6) it is 1 exactly in the samples where an input is forced;
 - for sensor faults (7, 8) it is 1 **for the whole batch**, including the first 40 h before the drift begins.
-  This is IndPenSim's convention. If you need "drift > 0" labels, use samples from 200 on.
+  This is IndPenSim's convention. If you need "drift > 0" labels, use samples from 200 on, or the
+  [fault options](#fault-timing-and-magnitude), which label the window only.
 
 So the label has two meanings: "the cause acts in this sample" for process faults, and "this batch has the fault"
 for sensor faults. [Campaigns and datasets](scenarios.md#fault-labels-in-campaigns) lists which label each tutorial
@@ -111,6 +92,125 @@ The faults with little effect on yield are the interesting ones for monitoring: 
 from their signature in the online data, not from the yield. The coolant-flow fault of the 2019 paper's
 Fig. 7D, which lost about 10 g/L, differs from the cooling faults of the V2.01 code, and we could not reproduce it
 ([quirks](quirks.md), 3.3).
+
+## Fault timing and magnitude
+
+*An addition to IndPenSim.* A `FaultSpec` describes one window of one fault: its onset, duration, magnitude and
+shape. Each of the three numbers can be fixed or drawn per batch from a distribution. Pass one spec, or several,
+as `SimulationConfig(fault_specs=...)`; the fault code (`config.fault`) is then taken from the specs. Without
+specs, every fault keeps IndPenSim's windows, and every output is the same as in earlier versions.
+
+```python
+from penicillium import FaultSpec, SimulationConfig, Simulator
+from penicillium.faults import Normal, Uniform
+
+# One line: aeration fault with a random onset and duration, IndPenSim's magnitude
+cfg = SimulationConfig(fault_specs=FaultSpec("aeration", randomise=True))
+
+# Fully custom: a sugar feed that loses 60 % of its flow, at a random time, for about 8 h
+leak = FaultSpec(
+    "substrate_feed", onset_h=Uniform(30, 120), duration_h=Normal(8, 2, low=1), magnitude=0.6, effect="scale"
+)
+cfg = SimulationConfig(fault_specs=leak)
+
+
+# A custom ramp: the temperature reading drifts as tau**2 over 60 h, then is recalibrated
+def quadratic(tau: float) -> float:
+    return tau**2
+
+
+drift = FaultSpec("temperature_sensor", onset_h=50, duration_h=60, magnitude=0.8, shape=quadratic, hold=False)
+cfg = SimulationConfig(fault_specs=drift)
+
+result = Simulator(config=cfg).run(seed=1)
+result.metadata["fault_windows"]  # the window drawn for this batch
+```
+
+`FaultSpec.indpensim(fault)` returns IndPenSim's windows as specs (two for aeration, three for the sugar feed,
+eleven for `Fault.ALL`). They give the same inputs as `SimulationConfig(fault=fault)`, bit for bit, and are a
+starting point for variants, for example `dataclasses.replace(spec, magnitude=10.0)`.
+
+### Options
+
+| Option | Default | Meaning |
+|---|---|---|
+| `fault` | | `Fault` or its name (`"aeration"`); any fault except `NONE` and `ALL` |
+| `onset_h` | first IndPenSim window | Start of the window [h], at least 0.2 h |
+| `duration_h` | first IndPenSim window | Length of the window [h]; `0` is one sample; `math.inf` (steps only) lasts to the end of the batch |
+| `magnitude` | first IndPenSim window | Size of the fault (see the table below) |
+| `shape` | `"step"` (faults 1–5), `"ramp"` (7–8) | `"step"`: constant over the window. `"ramp"`: rises linearly from 0 at the onset to the magnitude at the end of the window, then drops back to 0. A function `f(tau)` returning a value in [0, 1], where `tau` is the fraction of the window elapsed, gives a ramp of that form |
+| `effect` | `"set"` (1–5), `"offset"` (7–8) | How the magnitude acts (see the table below) |
+| `hold` | `True` for 7–8 with the IndPenSim duration, else `False` | After the window, keep the peak until the end of the batch, as IndPenSim's sensor drift does |
+| `randomise` | `False` | Draw the onset and duration left unset (see below) |
+
+Each of `onset_h`, `duration_h` and `magnitude` takes a number or one of the distributions of
+`penicillium.faults`: `Uniform(low, high)`, `Normal(mean, sd, low=None, high=None)` (clipped to the bounds) and
+`Choice(values)`. Times are rounded to the 12-minute sample grid. The window runs from the sample that ends at
+`onset_h` to the sample that ends at `onset_h + duration_h`, both included, as IndPenSim's windows do (onset 20 h,
+duration 4 h: samples 100 to 120).
+
+### What the magnitude means
+
+| Code | Acts on | Default effect and IndPenSim magnitude | Other effects | Shapes that fit |
+|---|---|---|---|---|
+| 1 `AERATION` | aeration `Fg` | `set`: forced to 20 (unit of the `Fg` channel) | `scale` | step (blower trip), ramp (sparger or filter fouling) |
+| 2 `PRESSURE` | back pressure | `set`: forced to 2 bar | `offset` [bar] | step (valve stuck), ramp (exhaust filter blinding) |
+| 3 `SUBSTRATE_FEED` | sugar feed `Fs` | `set`: forced to 2 L/h | `scale`, `offset` [L/h] | step (pump failure), ramp (line fouling) |
+| 4 `BASE_FLOW` | base flow `Fb` | `set`: forced to 5 L/h | `scale` | step (pump failure), ramp (pump wear) |
+| 5 `COOLANT_FLOW` | cooling water `Fc` | `set`: forced to 2 L/h | `scale` | step (valve or pump), ramp (partial blockage) |
+| 7 `TEMPERATURE_SENSOR` | temperature reading of the loop | `offset`: reads 0.4 K low | – | step (calibration bias), ramp (drift) |
+| 8 `PH_SENSOR` | pH reading of the loop | `offset`: reads 0.1 low | – | step (calibration bias), ramp (drift) |
+
+- `set`: the input is forced to the magnitude, as IndPenSim does. With a ramp the input moves from its normal
+  value to the magnitude over the window.
+- `scale`: the input loses the fraction `magnitude` (0 to 1) of its value: `0.6` is a 60 % loss of flow.
+- `offset`: the magnitude is added to the input (the result is kept at 0 or above). For the sensor faults the
+  reading the controller acts on is the true value minus the magnitude, so a positive magnitude reads low.
+
+!!! note "`set` and random timing"
+    A forced value is a deeper cut at some times than at others: forcing the aeration to 20 at 200 h, when the
+    recipe gives 75, is a larger loss than at 25 h, when it gives 42. Use `effect="scale"` for a fault of the
+    same relative size at any time.
+
+### Random timing
+
+With `randomise=True`, each onset and duration that you leave unset is drawn per batch, and the magnitude stays
+IndPenSim's unless you set it:
+
+| Fault | Duration [h] | Onset [h] |
+|---|---|---|
+| Aeration | uniform 4–10 | uniform from 20 to the batch length minus the duration |
+| Pressure | uniform 4–40 | as above |
+| Sugar feed | uniform 10–16 | as above |
+| Base flow | uniform 4–20 | as above |
+| Coolant flow | uniform 20–30 | as above |
+| Temperature, pH sensors | 120 (IndPenSim's ramp), then held to the end | uniform from 20 to the batch length minus 120 |
+
+The duration ranges span those of IndPenSim's windows for each fault. The onset range keeps the window inside
+the batch, unless the batch is shorter than 20 h plus the duration (the onset is then 20 h and the window is cut
+off at the end). In a [campaign](scenarios.md#fault-detection-and-diagnosis), `fault_campaign(..., randomise=True)`
+does this for every faulty batch (for `Fault.ALL`, faults 1–5 each get their own window).
+
+The random values come from the batch seed, each from its own random stream (one per spec and per onset,
+duration and magnitude). The same seed therefore gives the same windows on every platform and in every process,
+fixing one of the three values does not change the draws of the others, and switching the fault options on does
+not change the batch's other random inputs (initial state, kinetic parameters, disturbances, PRBS steps, Raman
+noise, measurement noise).
+
+### Several windows
+
+A batch can hold several windows: of the same fault, or of several of faults 1–5 (the batch code is then
+`Fault.ALL`). Windows on the same input apply in the order given: `set` replaces the value, `scale` multiplies it,
+offsets add. A window that starts after the end of the batch never acts; one that runs past the end is cut off.
+
+A spec with a custom `shape` function must be picklable to reach the worker processes of a campaign with
+`n_jobs > 1`: define the function at module level, not as a `lambda`.
+
+### Labels
+
+With fault options, `Fault_ref` (and `fault_active` in campaigns) is 1 exactly in the samples of the windows, for
+every fault, and `metadata["fault_windows"]` lists the windows drawn. This differs from IndPenSim's convention for
+the sensor faults, which marks the whole batch ([quirks](quirks.md), 1.7).
 
 ## Disturbances
 

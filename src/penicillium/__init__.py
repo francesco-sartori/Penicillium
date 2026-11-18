@@ -3,6 +3,7 @@
 from . import scenarios
 from ._version import __version__
 from .batches import BatchSpec, simulate_batches
+from .faults import FaultSpec
 from .noise import MeasurementNoise, Sensor
 from .recipe import INPUTS, Profile, Recipe
 from .result import CHANNELS, BatchResult
@@ -18,6 +19,7 @@ __all__ = [
     "BatchResult",
     "BatchSpec",
     "Fault",
+    "FaultSpec",
     "MeasurementNoise",
     "Profile",
     "RamanMode",

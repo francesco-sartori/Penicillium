@@ -64,9 +64,9 @@ Read these before you build a study on Penicillium. Each one is explained on the
 
 | Limitation | What it means for you |
 |---|---|
-| Fixed fault windows | Each fault acts at the same times, with the same duration and magnitude, in every batch (IndPenSim's windows), so a classifier can infer the fault from the batch time; detection delays reflect the windows ([Faults](faults.md#faults)) |
+| IndPenSim's fault windows by default | By default each fault acts at the same times, with the same duration and magnitude, in every batch (IndPenSim's windows), so a classifier can infer the fault from the batch time and detection delays reflect the windows. Random or custom onset, duration and magnitude are an option (`randomise=True`, `FaultSpec`) ([fault timing](faults.md#fault-timing-and-magnitude)) |
 | True values in the sensor-fault channels | With faults 7 and 8, the recorded `T` and `pH` are the true broth values, not the drifting reading the controller acts on, which makes detection easier than on a plant ([Faults](faults.md#sensor-faults-the-subtle-ones)) |
-| Two meanings of `Fault_ref` | 1 while the cause acts for process faults, but 1 for the entire batch with sensor faults ([fault labels](scenarios.md#fault-labels-in-campaigns)) |
+| Two meanings of `Fault_ref` | With IndPenSim's windows, 1 while the cause acts for process faults, but 1 for the entire batch with sensor faults; with the fault options, 1 in the window for every fault ([fault labels](scenarios.md#fault-labels-in-campaigns)) |
 | Loop signals not recorded | The controller outputs `Fa`, `Fb`, `Fc`, `Fh` are recorded, but not the setpoint, mode and process value of each loop, so actuator faults cannot be seen as an output departing from its flow ([Recipes and control](control.md)) |
 | Fixed agitator speed | 100 rpm; dissolved oxygen is not controlled, so an aeration fault shows in DO2, where under a DO cascade it would show in the agitator speed ([Recipes and control](control.md#the-default-recipe)) |
 | A single plant | The model's constants describe one 100 m³ plant; there is no documented way to re-parameterise it yet ([The model](model.md)) |
@@ -78,7 +78,7 @@ Read these before you build a study on Penicillium. Each one is explained on the
 | The interface may still change | Names of classes, functions and arguments may change before version 1.0 |
 
 !!! note "Status"
-    Penicillium is alpha software (0.1.0a1). The model is validated, but the Python API may still change
+    Penicillium is alpha software (0.1.0a2). The model is validated, but the Python API may still change
     between releases. Install it with `pip install "penicillium[fast]"` ([installation](installation.md)).
 
 !!! tip "A word on names"

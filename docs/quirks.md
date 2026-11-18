@@ -21,6 +21,7 @@ a detail "may not be intended", that is our reading of the source, not a stateme
 | 1.4 | Solver failures | — | A failed interval raises `SolverError` naming the sample; the result keeps the samples before it. With the default recipe the solver does not fail. |
 | 1.5 | Batch length | Draws a variable length (`round(230 + 25·randn)` h; `Fixed_Batch_length = 1` selects the *variable* length). | The length is set explicitly, `SimulationConfig(batch_length_h=...)`, up to 350 h, with IndPenSim's full recipe tables; `scenarios.variable_batch_lengths` draws IndPenSim's distribution. |
 | 1.6 | PLS model for PAA | `PAA_PLS_model.mat` | Not redistributed; `PAA_pred` uses a model of the same form fitted by Penicillium (`validation/train_paa_pls.py`). |
+| 1.7 | Fault windows | Fixed windows per fault (`fctrl_indpensim.m`, sensor drift in `indpensim.m`); the label `Fault_ref` is 1 in the windows of faults 1–6 and for the whole batch with faults 7 and 8. | The same by default. As an addition to IndPenSim, `FaultSpec` sets the onset, duration, magnitude and shape of each window, fixed or drawn from the batch seed ([faults](faults.md#fault-timing-and-magnitude)). With it, `Fault_ref` is 1 in the samples of the windows for every fault, so for the sensor faults it starts at the onset of the drift. `FaultSpec.indpensim(fault)` reproduces IndPenSim's inputs bit for bit, with that label. |
 
 ## 2. IndPenSim details we are unsure about
 

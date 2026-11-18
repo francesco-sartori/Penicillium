@@ -8,6 +8,8 @@
 
 ::: penicillium.simulator.Fault
 
+::: penicillium.faults
+
 ::: penicillium.simulator.RamanMode
 
 ::: penicillium.result.BatchResult

@@ -45,6 +45,7 @@ nav:
       - 7. Reinforcement learning: tutorials/07_reinforcement_learning.ipynb
       - 8. Differentiable model (JAX): tutorials/08_differentiable_model.ipynb
       - 9. Command line: tutorials/09_command_line.ipynb
+      - 10. Fault timing and magnitude: tutorials/10_fault_timing.ipynb
   - User guide:
       - The process: process.md
       - The model: model.md

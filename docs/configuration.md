@@ -37,6 +37,7 @@ result = Simulator(config=config).run(seed=42)
 | `offline_delay_steps` | `4` | Lab turnaround, in 12-minute samples (4 = 48 min) |
 | `batch_length_h` | `230.0` | Batch length [h]; a multiple of 0.2 h, at most 350 h |
 | `quirks` | `"matlab"` | `"fixed"` uses an alternative reading of two details of IndPenSim's controller code ([quirks](quirks.md), section 2) |
+| `fault_specs` | `()` | Onset, duration, magnitude and shape of the fault windows, fixed or random, instead of IndPenSim's windows; `fault` is then taken from the specs ([fault timing and magnitude](faults.md#fault-timing-and-magnitude)) |
 
 !!! tip "Raman mode is the only switch that changes speed much"
     Spectra add about 50 % to the run time and about 20 MB per batch to the result. Set
@@ -89,7 +90,8 @@ check exactly that.
 
 The means and standard deviations are IndPenSim's. Each quantity has its own independent random stream, derived
 from the seed with NumPy's `SeedSequence`, so the draws are identical on every platform and Python version.
-The seed also initialises the streams for the Raman noise and the PRBS steps.
+The seed also initialises the streams for the Raman noise and the PRBS steps, and those of random fault windows
+([fault timing](faults.md#random-timing)), which never change the other draws.
 
 To see what a seed gives without running the batch:
 
@@ -135,8 +137,8 @@ gives the MATLAB snippet.
 
 ## Batch length
 
-`batch_length_h` can be anything from one sample (0.2 h) to 350 h in steps of 0.2 h. Since the recipe and the
-fault profiles are defined in absolute time, a longer batch sees more harvest draws and later recipe segments. A
+`batch_length_h` can be anything from one sample (0.2 h) to 350 h in steps of 0.2 h. Since the recipe and
+IndPenSim's fault windows are defined in absolute time, a longer batch sees more harvest draws and later recipe segments. A
 shorter batch simply stops early. To mimic IndPenSim's variable batch lengths ($230 + 25\,\varepsilon$ h,
 $\varepsilon \sim N(0,1)$), draw them with `penicillium.scenarios.variable_batch_lengths(n, seed)`.
 
