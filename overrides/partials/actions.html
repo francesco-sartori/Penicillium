@@ -1,9 +1,12 @@
 {#-
-  Material's partials/actions.html, plus a download button on notebook pages (mkdocs-jupyter, include_source).
+  Material's partials/actions.html, plus a labelled download button on notebook pages (mkdocs-jupyter,
+  include_source; styled in stylesheets/extra.css).
 -#}
 {% if page.nb_url %}
-  <a href="{{ page.nb_url }}" title="Download the notebook" class="md-content__button md-icon" download>
+  <a href="{{ page.nb_url }}" title="Download this notebook (.ipynb) to run it in Jupyter"
+     class="md-button md-button--primary nb-download" download>
     {% include ".icons/material/download.svg" %}
+    <span>Download notebook</span>
   </a>
 {% endif %}
 {% if page.edit_url %}

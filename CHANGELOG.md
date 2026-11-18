@@ -3,8 +3,34 @@
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); a minor version
 may change numerical output only with an entry here and an updated validation report.
 
-## Unreleased
+## Unreleased (0.1.0a2)
 
+### Faults
+- `FaultSpec` (`penicillium.faults`, an addition to IndPenSim): the onset, duration and magnitude of each fault
+  window, each fixed or drawn per batch from a distribution (`Uniform`, `Normal`, `Choice`); step or ramp
+  profiles, with a user-defined ramp shape `f(tau)`; effects `set` (IndPenSim's forced value), `scale` (fraction
+  lost) and `offset`. Passed as `SimulationConfig(fault_specs=...)`; the windows drawn are in
+  `BatchResult.metadata["fault_windows"]`.
+- `FaultSpec(fault, randomise=True)` and `fault_campaign(..., randomise=True)`: random onset and duration per
+  batch, so the timing of a fault no longer gives its type away. `fault_campaign(faults=...)` also accepts
+  `FaultSpec` objects. Campaigns with fault options add `batches.fault_end_h` and `Campaign.fault_windows`
+  (`fault_windows.csv`).
+- `FaultSpec.indpensim(fault)`: IndPenSim's windows as specs (a preset), with the same inputs bit for bit.
+- Random fault values come from the batch seed in streams of their own: the other random inputs of a batch do
+  not change.
+- With fault options, `Fault_ref` and `fault_active` mark the samples of the windows for every fault, including
+  the sensor faults ([quirks](docs/quirks.md), 1.7).
+- Without fault options every output is unchanged (checked bit for bit against 0.1.0a1 for faults 0-8, both
+  `quirks` readings, the three inhibition models, Raman, PAT control and the Numba backend:
+  `tests/test_fault_regression.py`). No change to the validation report.
+
+### Documentation
+- Tutorial 10, "Fault timing and magnitude".
+- Tutorials overview: "Download all tutorials (.zip)" button and a download button for each notebook; a labelled
+  "Download notebook" button at the top of each tutorial.
+- `llms.txt` and `llms-full.txt` at the root of the documentation site (https://llmstxt.org), with a Markdown copy
+  of every page (notebooks converted with their text outputs, the API reference from the docstrings).
+- `AGENTS.md`: setup, checks, layout and rules for coding agents working on the repository.
 - README badges (PyPI, documentation, DOI) and the Zenodo concept DOI in `CITATION.cff`, the README and
   [citing](docs/citing.md).
 - README rewritten: install from PyPI, badges, a figure of one batch (`docs/scripts/readme_figure.py`), a
