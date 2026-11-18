@@ -3,6 +3,12 @@
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); a minor version
 may change numerical output only with an entry here and an updated validation report.
 
+## Unreleased
+
+- CI: macOS tests run in their own workflow (`ci-macos.yml`), on pull requests and on demand; CI no longer runs
+  again on version tags, and the release smoke test runs on Linux and Windows. An unallocated macOS runner then
+  no longer blocks a release or marks main and the tags as failed. No code changes.
+
 ## 0.1.0a2 (2026-11-18)
 
 ### Faults
