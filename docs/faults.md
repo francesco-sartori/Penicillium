@@ -138,9 +138,9 @@ starting point for variants, for example `dataclasses.replace(spec, magnitude=10
 | `onset_h` | first IndPenSim window | Start of the window [h], at least 0.2 h |
 | `duration_h` | first IndPenSim window | Length of the window [h]; `0` is one sample; `math.inf` (steps only) lasts to the end of the batch |
 | `magnitude` | first IndPenSim window | Size of the fault (see the table below) |
-| `shape` | `"step"` (faults 1–5), `"ramp"` (7–8) | `"step"`: constant over the window. `"ramp"`: rises linearly from 0 at the onset to the magnitude at the end of the window, then drops back to 0. A function `f(tau)` returning a value in [0, 1], where `tau` is the fraction of the window elapsed, gives a ramp of that form |
+| `shape` | `"step"` (faults 1–5), `"ramp"` (7–8) | `"step"`: constant over the window. `"ramp"`: rises linearly from 0 at the onset to the magnitude at the end of the window. A function `f(tau)` returning a value in [0, 1], where `tau` is the fraction of the window elapsed, gives a ramp of that form. After the window, see `hold` |
 | `effect` | `"set"` (1–5), `"offset"` (7–8) | How the magnitude acts (see the table below) |
-| `hold` | `True` for 7–8 with the IndPenSim duration, else `False` | After the window, keep the peak until the end of the batch, as IndPenSim's sensor drift does |
+| `hold` | `True` (7–8), `False` (1–5) | After the window, keep the value reached at its end until the end of the batch, as IndPenSim's sensor drift does. With `False` the fault ends with the window (a sensor recalibrated, a pump restarted) |
 | `randomise` | `False` | Draw the onset and duration left unset (see below) |
 
 Each of `onset_h`, `duration_h` and `magnitude` takes a number or one of the distributions of

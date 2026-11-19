@@ -3,11 +3,21 @@
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); a minor version
 may change numerical output only with an entry here and an updated validation report.
 
-## Unreleased
+## 0.1.0a3 (2026-11-19)
 
-- CI: macOS tests run in their own workflow (`ci-macos.yml`), on pull requests and on demand; CI no longer runs
+### Faults
+- A sensor fault (`temperature_sensor`, `ph_sensor`) given as a `FaultSpec` now keeps its final offset after the
+  window until the end of the batch, as IndPenSim's sensor drift does, whatever its duration and shape: `hold`
+  defaults to `True` for faults 7-8. In 0.1.0a2 a sensor fault with a `duration_h` of its own went back to a zero
+  offset at the end of the window. `hold=False` keeps that behaviour (a sensor recalibrated at the end of the
+  window). Faults 1-5 are unchanged (`hold=False`).
+- With `hold`, a custom shape `f(tau)` keeps its value at the end of the window, `f(1) * magnitude`.
+- Without fault options, and with `FaultSpec.indpensim(...)`, every output is unchanged.
+
+### CI
+- macOS tests run in their own workflow (`ci-macos.yml`), on pull requests and on demand; CI no longer runs
   again on version tags, and the release smoke test runs on Linux and Windows. An unallocated macOS runner then
-  no longer blocks a release or marks main and the tags as failed. No code changes.
+  no longer blocks a release or marks main and the tags as failed.
 
 ## 0.1.0a2 (2026-11-18)
 

@@ -114,12 +114,29 @@ def test_labels_follow_the_window():
     }]  # fmt: skip
 
 
-def test_sensor_fault_offsets_the_reading_in_the_window_only():
+def test_sensor_fault_offsets_the_reading_from_the_onset():
     r = run(FaultSpec("temperature_sensor", onset_h=10.0, duration_h=4.0, magnitude=0.4, shape="step"), 20.0)
-    assert list(np.flatnonzero(r["Fault_ref"]) + 1) == list(range(50, 71))
+    assert list(np.flatnonzero(r["Fault_ref"]) + 1) == list(range(50, 101))  # held to the end, as IndPenSim's drift
     ref = Simulator(config=SimulationConfig(batch_length_h=20.0, **OFF)).run(seed=1)
     np.testing.assert_array_equal(r["T"][:49], ref["T"][:49])
     assert r["T"][70] > ref["T"][70]  # the loop drives the true temperature up while the reading is low
+    assert r["T"][99] > ref["T"][99]  # and keeps it up after the window
+
+
+@pytest.mark.parametrize("shape", ["step", "ramp", quadratic])
+def test_sensor_faults_keep_their_final_offset(shape):
+    spec = FaultSpec("temperature_sensor", onset_h=50, duration_h=60, magnitude=0.8, shape=shape)
+    assert spec.hold
+    (w,) = draw_windows([spec], 0, 1150)
+    assert w.acts(1150) and w.amount(1150) == pytest.approx(0.8)
+    assert w.amount(1150) == w.amount(w.last + 1)
+    (off,) = draw_windows([replace(spec, hold=False)], 0, 1150)
+    assert not off.acts(off.last + 1)  # opt out: the sensor is recalibrated at the end of the window
+
+
+def test_held_custom_shape_keeps_its_final_value():
+    held = window(lambda tau: 0.5 * tau, hold=True)
+    assert held.amount(500) == pytest.approx(1.0) == held.amount(20)
 
 
 def test_campaign_reflects_the_drawn_windows():

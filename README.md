@@ -27,7 +27,7 @@ soft sensors, fault detection and control.
 
 *One default batch, `Simulator().run(seed=1)` ([script](https://github.com/francesco-sartori/Penicillium/blob/main/docs/scripts/readme_figure.py)).*
 
-> Status: alpha (0.1.0a2). The API may still change.
+> Status: alpha (0.1.0a3). The API may still change.
 
 ## Install
 
