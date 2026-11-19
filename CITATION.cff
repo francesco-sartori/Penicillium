@@ -9,8 +9,8 @@ authors:
   - family-names: Sartori
     given-names: Francesco
     orcid: "https://orcid.org/0000-0002-7905-5690"
-version: 0.1.0a2
-date-released: 2026-11-18
+version: 0.1.0a3
+date-released: 2026-11-19
 doi: 10.5281/zenodo.23773130
 repository-code: "https://github.com/francesco-sartori/Penicillium"
 url: "https://penicillium.readthedocs.io"

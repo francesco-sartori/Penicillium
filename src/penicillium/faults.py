@@ -2,7 +2,7 @@
 
 By default a fault acts in IndPenSim V2.01's fixed windows (``penicillium.Fault``). A ``FaultSpec`` describes one
 window of one fault instead, with its onset, duration and magnitude each fixed or drawn from a distribution, and its
-shape (a step, or a ramp)::
+shape (a step, or a ramp). A sensor fault (7-8) keeps its final offset after the window, as IndPenSim's drift does::
 
     from penicillium import FaultSpec, SimulationConfig, Simulator
     from penicillium.faults import Normal, Uniform
@@ -168,13 +168,15 @@ class FaultSpec:
         magnitude: size of the fault, in the unit of the input (``set``, ``offset``), as a fraction 0-1 (``scale``),
             or in K or pH units for the sensor faults (the reading is the true value minus the magnitude).
         shape: ``"step"`` (constant over the window), ``"ramp"`` (linear from 0 at the onset to the magnitude at the
-            end of the window, then back to 0) or a function ``f(tau) -> [0, 1]`` of the fraction ``tau`` of the window
-            elapsed (a ramp of that form). With ``n_jobs > 1`` it must be picklable (a module-level function).
+            end of the window) or a function ``f(tau) -> [0, 1]`` of the fraction ``tau`` of the window elapsed (a ramp
+            of that form). After the window the fault ends, or with ``hold`` keeps its final value. With ``n_jobs > 1``
+            it must be picklable (a module-level function).
             ``None``: ``"step"`` for faults 1-5, ``"ramp"`` for the sensor faults 7-8 (IndPenSim's).
         effect: how the magnitude acts on an input: ``"set"``, ``"scale"`` or ``"offset"``; ``None``: the fault's
             default (``"set"`` for faults 1-5, ``"offset"`` for 7-8).
-        hold: after the window, keep the peak until the end of the batch. ``None``: ``True`` for a sensor fault that
-            keeps IndPenSim's 120 h ramp (``duration_h=None``, the IndPenSim drift), else ``False``.
+        hold: after the window, keep the value reached at its end until the end of the batch, as IndPenSim's sensor
+            drift does. ``None``: ``True`` for the sensor faults 7-8 (whatever the duration or shape), ``False`` for
+            faults 1-5.
         randomise: draw the onset and duration left at ``None`` instead of taking IndPenSim's.
     """
 
@@ -197,7 +199,7 @@ class FaultSpec:
         if self.shape is None:
             object.__setattr__(self, "shape", "ramp" if sensor else "step")
         if self.hold is None:
-            object.__setattr__(self, "hold", sensor and self.duration_h is None)
+            object.__setattr__(self, "hold", sensor)
         if not (callable(self.shape) or self.shape in ("step", "ramp")):
             raise ValueError(f"shape must be 'step', 'ramp' or a function f(tau), got {self.shape!r}")
         if self.effect is not None and self.effect not in info.effects:
@@ -294,9 +296,9 @@ class FaultWindow:
 
     def weight(self, k: int) -> float:
         """Fraction of the magnitude applied in sample ``k`` (``acts(k)`` must hold)."""
-        if self.shape == "step" or k > self.last:
+        if self.shape == "step":
             return 1.0
-        tau = 1.0 if self.last == self.first else (k - self.first) / (self.last - self.first)
+        tau = 1.0 if k >= self.last else (k - self.first) / (self.last - self.first)
         if self.shape == "ramp":
             return tau
         w = float(self.shape(tau))
@@ -317,7 +319,7 @@ class FaultWindow:
     def apply(self, k: int, value: float) -> float:
         """The input ``value`` with this fault applied in sample ``k``."""
         if self.effect == "set":
-            if self.shape == "step" or k > self.last:
+            if self.shape == "step":
                 return self.magnitude
             return value + self.weight(k) * (self.magnitude - value)
         if self.effect == "scale":
